@@ -6,33 +6,32 @@ DOCUMENTATION = r'''
 module: read_document
 author:
     - Edward-Joseph Fattouch (@ejfattouch)
-short_description: Reads an entire excel document
+short_description: Reads data from an entire Excel document
 description:
-    - Reads an entire excel document using the openpyxl module.
+    - Reads data from an entire Excel document using the openpyxl module.
 requirements:
     - "openpyxl"
-    - "xlwings"
-    - "running excel instance on windows and macOS (only required for data evaluation)"
+    - "xlwings module and running Excel instance on windows and macOS (only required for data evaluation)"
 options:
   path:
     description:
-      - Path to the excel document.
+      - Path to the Excel document.
     type: str
   evaluate:
     description:
-      - Whether or not to evaluate the functions in an excel document.
-      notes: Only compatible on Windows and MacOS with xlwings and a running excel instance
-      type: bool
-      default: false
+      - Whether or not to evaluate the functions in an Excel document. If false, will return the last calculated value.
+    notes: Only compatible on Windows and MacOS with xlwings and an installed Excel instance
+    type: bool
+    default: false
 '''
 
 EXAMPLES = r"""
-- name: Read an entire excel document
+- name: Read an entire Excel document
   ejf.read_excel_document:
     path: /your/path/excel/document.xlsx
   register: document
   
-- name: Read an excel document with its values evaluated
+- name: Read an Excel document with its values evaluated
   ejf.read_excel_document:
     path: /your/path/excel/document.xlsx
     evaluate: true
@@ -40,24 +39,27 @@ EXAMPLES = r"""
 """
 
 RETURN = r"""
+content:
+    description: The contents of each sheets of the document.
+    type: dict
+    sample: {'Sheet1': [...], 'Sheet2': [...], ...}
+evaluated:
+    description: Returns True if the functions were evaluated.
+    type: bool
+    returned: always
 path:
-    description: The path to the excel document.
+    description: The path to the Excel document.
     type: str
     returned: always
 sheets:
     description: List containing the names of the sheets.
     type: list
     returned: always
-content:
-    description: The contents of each sheets of the document.
-    type: dict
-    sample: {'Sheet1': [...], 'Sheet2': [...], ...}
 """
 
 import os
 from ansible.module_utils.basic import AnsibleModule
 from openpyxl import *
-import xlwings as xw
 
 
 def read_data(wb):
@@ -73,8 +75,9 @@ def read_data(wb):
 
 
 def evaluate_workbook(path):
+    import xlwings as xw
     # xlwings allows for workbook to be opened using running excel instance
-    excel_app = xw.App(visible=False)
+    excel_app = xw.App(visible=False) # open excel app in hidden mode
     excel_book = excel_app.books.open(path)
     excel_book.save()  # calling excel save compute functions and store it in cache
     excel_book.close()
@@ -107,8 +110,6 @@ def check_excel_installation():
 def main():
     module_args = dict(path=dict(type='path', required=True),
                        evaluate=dict(type='bool', default=False))
-    results = {}
-
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True,
@@ -116,25 +117,35 @@ def main():
 
     if not os.path.isfile(module.params['path']):
         module.fail_json(msg="The specified excel file does not exist at " + module.params['path'])
+        return 1
 
     excel_wb = load_workbook(filename=module.params['path'], data_only=True)
     sheets_names = excel_wb.sheetnames
+    results = {}
+    results['path'] = os.path.abspath(module.params['path'])
+    results['sheets'] = sheets_names
 
     if module.params['evaluate']:
         try:
             if not check_excel_installation():
                 module.fail_json(msg="Excel is not installed, needed for function evaluation.")
+                return 1
+            results['content'] = evaluate_workbook(module.params['path'])
+            results['evaluated'] = True
         except RuntimeError as e:
             module.fail_json(msg=str(e))
-        results['content'] = evaluate_workbook(module.params['path'])
+            return 1
+        except ModuleNotFoundError as e:
+            module.fail_json(msg=f"{e.name} is not installed, needed for function evaluation.")
+            return 1
+
     else:
         excel_wb = load_workbook(filename=module.params['path'], data_only=True)
         results['content'] = read_data(excel_wb)
-
-    results['path'] = module.params['path']
-    results['sheets'] = sheets_names
+        results['evaluated'] = False
 
     module.exit_json(**results)
+    return 0
 
 
 if __name__ == '__main__':
