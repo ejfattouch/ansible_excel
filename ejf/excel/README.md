@@ -1,3 +1,3 @@
 # Ansible Collection - ejf.excel
 
-Documentation for the collection.
+This collection is still a work in progress, will update this readme once it is ready.
