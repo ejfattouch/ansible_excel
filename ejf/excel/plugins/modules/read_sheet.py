@@ -48,7 +48,7 @@ RETURN = r"""
 content:
     description: The contents of the sheet.
     type: list
-    sample: {'Sheet1': [...], 'Sheet2': [...], ...}
+    sample: ["Content 1", "Content 2", 1234, ...]
     returned: always
 evaluated:
     description: Returns True if the functions were evaluated.
@@ -60,7 +60,7 @@ path:
     returned: always
 sheet:
     description: Name of the sheet that was read.
-    type: list
+    type: str
     returned: always
 """
 

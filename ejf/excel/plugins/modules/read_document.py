@@ -54,6 +54,7 @@ path:
 sheets:
     description: List containing the names of the sheets.
     type: list
+    elements: str
     returned: always
 """
 
