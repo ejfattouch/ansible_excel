@@ -97,7 +97,7 @@ def check_excel_installation():
         try:
             # Check if Excel executable exists
             excel_path = os.path.join(os.environ["ProgramFiles"], "Microsoft Office", "root", "Office16", "EXCEL.EXE")
-            excel_path_x86 = os.path.join(os.environ["ProgramFiles"], "Microsoft Office", "root", "Office16",
+            excel_path_x86 = os.path.join(os.environ["ProgramFiles(x86)"], "Microsoft Office", "root", "Office16",
                                           "EXCEL.EXE")
             return os.path.exists(excel_path) or os.path.exists(excel_path_x86)
         except KeyError:
