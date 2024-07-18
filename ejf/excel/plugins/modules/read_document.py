@@ -27,12 +27,12 @@ options:
 
 EXAMPLES = r"""
 - name: Read an entire Excel document
-  ejf.read_excel_document:
+  ejf.excel.read_document:
     path: /your/path/excel/document.xlsx
   register: document
   
 - name: Read an Excel document with its values evaluated
-  ejf.read_excel_document:
+  ejf.excel.read_document:
     path: /your/path/excel/document.xlsx
     evaluate: true
   register: document
