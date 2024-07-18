@@ -69,10 +69,6 @@ evaluated:
     description: Returns whether or not the functions were evaluated.
     type: bool
     returned: always
-overridden:
-    description: Returns whether or not the non-empty cells were overriden.
-    type: bool
-    returned: always
 path:
     description: The path to the Excel document.
     type: str
@@ -112,10 +108,9 @@ def check_excel_installation():
 
 # Grabs sheet from Excel workbook or creates a new one if it doesn't already exist
 def grab_sheet(sheet_name, wb):
-    sheets = wb.sheetsnames
-    if sheet_name in sheets:
-        return wb[sheet_name]
-    wb.create_sheet(sheet_name)
+    sheets = wb.sheetnames
+    if sheet_name not in sheets:
+        wb.create_sheet(sheet_name)
     return wb[sheet_name]
 
 
@@ -140,21 +135,21 @@ def validate_data(data_list):
 
 
 def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
-    ws = wb[sheet_name]
+    ws = grab_sheet(sheet_name, wb)
     cell_coord = xl_utils.coordinate_to_tuple(cell)
     start_row, start_col = cell_coord[0], cell_coord[1]
 
     def write_cell(value, row, column):  # Returns true if successfully written
         w_cell = ws.cell(row=row, column=column)
         if isinstance(w_cell, MergedCell):  # Skip over merged cells when writing
-            return False, False
-        if cell.value is None:
-            cell.value = value
-            return True, False
-        elif override and cell.value != value:
-            cell.value = value
-            return True, True
-        return "skipped", False
+            return False
+        if w_cell.value is None:
+            w_cell.value = value
+            return True
+        elif override and w_cell.value != value:
+            w_cell.value = value
+            return True
+        return "skipped"
 
     def write_row(row_elements, row, col=start_col):
         num_items = len(row_elements)
@@ -162,15 +157,12 @@ def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
         write_change = False
         while item_number < num_items:
             status = write_cell(row_elements[item_number], row, col)
-            if status[0] == "skipped":
+            if status == "skipped":  # If writing data was skipped move on to the next item
                 item_number += 1
-                col += 1
-            elif status[0]:
+            elif status:
                 write_change = True
                 item_number += 1
-                col += 1
-            else:  # If unsuccessful move on to next cell
-                col += 1
+            col += 1
         return write_change
 
     changed = False
@@ -235,6 +227,8 @@ def main():
         sheet_name = wb.sheetnames[0]  # Get the first sheet if the sheet_name is unspecified
 
     changed = write_data_to_sheet(data, cell, wb, sheet_name, override)
+    if changed:
+        wb.save(filepath)
 
     evaluated = False
     if evaluate:
@@ -257,8 +251,8 @@ def main():
     results['path'] = os.path.abspath(filepath)
     results['sheet'] = sheet_name
     results['cell'] = cell
-    results['overridden'] = was_overridden
     results['evaluate'] = evaluated
+    results['changed'] = changed
 
     module.exit_json(**results)
     return 0
