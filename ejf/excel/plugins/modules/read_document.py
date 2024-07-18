@@ -98,8 +98,7 @@ def check_excel_installation():
             excel_path_x86 = os.path.join(os.environ["ProgramFiles(x86)"], "Microsoft Office", "root", "Office16",
                                           "EXCEL.EXE")
             return os.path.exists(excel_path) or os.path.exists(excel_path_x86)
-        except KeyError:
-            # Environment variable not found (Excel not installed)
+        except KeyError:  # Environment variable not found (Excel not installed)
             return False
     elif platform.system() == 'Darwin':
         excel_path = os.path.join("/Applications", "Microsoft Excel.app")
@@ -133,7 +132,7 @@ def main():
                 return 1
             results['content'] = evaluate_workbook(module.params['path'])
             results['evaluated'] = True
-        except RuntimeError as e:
+        except RuntimeError as e:  # Exception when wrong os is trying to be used for func validation
             module.fail_json(msg=str(e))
             return 1
         except ModuleNotFoundError as e:

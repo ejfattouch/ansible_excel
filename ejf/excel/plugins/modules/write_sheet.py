@@ -238,14 +238,11 @@ def main():
                 return 1
             evaluate_workbook(filepath)
             evaluated = True
-        except RuntimeError as e:
+        except RuntimeError as e:  # Exception when wrong os is trying to be used for func validation
             module.fail_json(msg=str(e))
             return 1
         except ModuleNotFoundError as e:
             module.fail_json(msg=f"{e.name} is not installed, needed for function evaluation.")
-            return 1
-        except KeyError as e:
-            module.fail_json(msg=f"{e} does not exist at {os.path.abspath(filepath)}")
             return 1
 
     results['path'] = os.path.abspath(filepath)

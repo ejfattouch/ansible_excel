@@ -100,8 +100,7 @@ def check_excel_installation():
             excel_path_x86 = os.path.join(os.environ["ProgramFiles(x86)"], "Microsoft Office", "root", "Office16",
                                           "EXCEL.EXE")
             return os.path.exists(excel_path) or os.path.exists(excel_path_x86)
-        except KeyError:
-            # Environment variable not found (Excel not installed)
+        except KeyError:  # Environment variable not found (Excel not installed)
             return False
     elif platform.system() == 'Darwin':
         excel_path = os.path.join("/Applications", "Microsoft Excel.app")
@@ -138,14 +137,11 @@ def main():
                 return 1
             results['content'] = evaluate_workbook(module.params['path'], sheet_name)
             results['evaluated'] = True
-        except RuntimeError as e:
+        except RuntimeError as e:  # Exception when wrong os is trying to be used for func validation
             module.fail_json(msg=str(e))
             return 1
         except ModuleNotFoundError as e:
             module.fail_json(msg=f"{e.name} is not installed, needed for function evaluation.")
-            return 1
-        except KeyError as e:
-            module.fail_json(msg=f"{e} does not exist at {os.path.abspath(module.params['path'])}")
             return 1
     else:
         try:
@@ -153,7 +149,7 @@ def main():
             results['content'] = read_data(excel_wb, sheet_name)
             results['evaluated'] = False
         except KeyError as e:
-            err_msg = f"Worksheet '{module.params['sheet']}' does not exist at {os.path.abspath(module.params['path'])}"
+            err_msg = f"Worksheet '{module.params['sheet']}' does not exist in Excel workbook {os.path.abspath(module.params['path'])}"
             module.fail_json(msg=err_msg)
             return 1
 
