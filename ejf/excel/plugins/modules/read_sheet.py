@@ -3,7 +3,7 @@
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 DOCUMENTATION = r'''
-module: read_document
+module: read_sheet
 author:
     - Edward-Joseph Fattouch (@ejfattouch)
 short_description: Reads data from a single sheet in an Excel document
@@ -32,14 +32,21 @@ options:
 '''
 
 EXAMPLES = r"""
-- name: Read an entire Excel document
-  ejf.read_excel_document:
+- name: Read sheet Sheet1 in an Excel document
+  ejf.excel.read_sheet:
+    path: /your/path/excel/document.xlsx
+    sheet: "Sheet1"
+  register: document
+
+- name: Read first sheet in an Excel document
+  ejf.excel.read_sheet:
     path: /your/path/excel/document.xlsx
   register: document
   
-- name: Read an Excel document with its values evaluated
-  ejf.read_excel_document:
+- name: Read evaluated sheet Sheet1 in an Excel document
+  ejf.excel.read_sheet:
     path: /your/path/excel/document.xlsx
+    sheet: "Sheet1"
     evaluate: true
   register: document
 """
