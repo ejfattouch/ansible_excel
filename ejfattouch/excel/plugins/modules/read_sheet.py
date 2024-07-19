@@ -19,14 +19,14 @@ options:
     type: str
   sheet:
     description:
-      - The name of the sheet to read.
-    notes: If left empty, first sheet in the workbook will be used.
+      - The name of the sheet to write to. If the sheet does not exist, it will be created.
+      - If left empty, first sheet in the workbook will be used.
     type: str
-    default: ''
+    default: 'First sheet in the workbook'
   evaluate:
     description:
-      - Whether or not to evaluate the functions in an Excel document.
-    notes: Only compatible on Windows and MacOS with xlwings and an installed Excel instance
+      - Whether or not to evaluate the functions in an Excel document. If false, will return the last calculated value.
+      - Only compatible on Windows and MacOS with xlwings and an installed Excel instance
     type: bool
     default: false
 '''
@@ -55,7 +55,7 @@ RETURN = r"""
 content:
     description: The contents of the sheet.
     type: list
-    sample: ["Content 1", "Content 2", 1234, ...]
+    sample: ["Content 1", "Content 2", 1234]
     returned: always
 evaluated:
     description: Returns True if the functions were evaluated.

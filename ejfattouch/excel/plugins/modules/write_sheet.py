@@ -20,9 +20,9 @@ options:
   sheet:
     description:
       - The name of the sheet to write to. If the sheet does not exist, it will be created.
-    notes: If left empty, first sheet in the workbook will be used.
+      - If left empty, first sheet in the workbook will be used.
     type: str
-    default: ''
+    default: 'First sheet in the workbook'
   cell:
     description:
       - The cell to start writing at.
@@ -40,8 +40,8 @@ options:
     default: true
   evaluate:
     description:
-      - Whether or not to evaluate the functions in an Excel document after all data has been written.
-    notes: Only compatible on Windows and MacOS with xlwings and an installed Excel instance
+      - Whether or not to evaluate the functions in an Excel document. If false, will return the last calculated value.
+      - Only compatible on Windows and MacOS with xlwings and an installed Excel instance
     type: bool
     default: false
 '''

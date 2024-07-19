@@ -20,7 +20,7 @@ options:
   evaluate:
     description:
       - Whether or not to evaluate the functions in an Excel document. If false, will return the last calculated value.
-    notes: Only compatible on Windows and MacOS with xlwings and an installed Excel instance
+      - Only compatible on Windows and MacOS with xlwings and an installed Excel instance
     type: bool
     default: false
 '''
@@ -42,7 +42,8 @@ RETURN = r"""
 content:
     description: The contents of each sheets of the document.
     type: dict
-    sample: {'Sheet1': [...], 'Sheet2': [...], ...}
+    sample: {'Sheet1': [...], 'Sheet2': [...]}
+    returned: always
 evaluated:
     description: Returns True if the functions were evaluated.
     type: bool
@@ -52,7 +53,7 @@ path:
     type: str
     returned: always
 sheets:
-    description: List containing the names of the sheets.
+    description: Names of all sheets in the document.
     type: list
     elements: str
     returned: always
