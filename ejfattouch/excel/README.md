@@ -3,11 +3,11 @@
 This ```ejf.excel``` collection provides modules that allow for reading and writing data to and from Excel files.
 
 ## Requirements
- - Ansible: >= 2.9.10
- - openpyxl
- - xlwings and installed instance of Excel (optional)
-    - Required only on MacOs or Windows
-    - Needed for function evaluation
+- Ansible: >= 2.9.10
+- openpyxl
+- xlwings and installed instance of Excel (optional)
+   - Required only on MacOs or Windows
+   - Needed for function evaluation
 
 ## Install
 Ansible must be installed
@@ -32,23 +32,23 @@ Once the collection is installed, it can be used in a playbook by specifying the
 ```yaml
 - hosts: localhost
   gather_facts: no
-  
-  tasks:
-  - name: Read data in an Excel document
-    ejf.excel.read_document:
-       path: /your/path/excel/document.xlsx
-    register: document      
 
-  - name: Read sheet Sheet1 in an Excel document
-    ejf.excel.read_sheet:
-      path: /your/path/excel/document.xlsx
-      sheet: "Sheet1"
-    register: sheet1
-    
-  - name: Write data to a single cell in an Excel document
-    ejf.excel.write_sheet:
-      path: /your/path/excel/document.xlsx
-      sheet: "Sheet1"
-      cell: B10
-      data: "your_data"
+  tasks:
+     - name: Read data in an Excel document
+       ejfattouch.excel.read_document:
+          path: /your/path/excel/document.xlsx
+       register: document
+
+     - name: Read sheet Sheet1 in an Excel document
+       ejfattouch.excel.read_sheet:
+          path: /your/path/excel/document.xlsx
+          sheet: "Sheet1"
+       register: sheet1
+
+     - name: Write data to a single cell in an Excel document
+       ejfattouch.excel.write_sheet:
+          path: /your/path/excel/document.xlsx
+          sheet: "Sheet1"
+          cell: B10
+          data: "your_data"
 ```

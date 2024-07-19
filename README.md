@@ -35,18 +35,18 @@ Once the collection is installed, it can be used in a playbook by specifying the
   
   tasks:
   - name: Read data in an Excel document
-    ejf.excel.read_document:
+    ejfattouch.excel.read_document:
        path: /your/path/excel/document.xlsx
     register: document      
 
   - name: Read sheet Sheet1 in an Excel document
-    ejf.excel.read_sheet:
+    ejfattouch.excel.read_sheet:
       path: /your/path/excel/document.xlsx
       sheet: "Sheet1"
     register: sheet1
     
   - name: Write data to a single cell in an Excel document
-    ejf.excel.write_sheet:
+    ejfattouch.excel.write_sheet:
       path: /your/path/excel/document.xlsx
       sheet: "Sheet1"
       cell: B10

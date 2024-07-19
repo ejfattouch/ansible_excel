@@ -48,39 +48,39 @@ options:
 
 EXAMPLES = r"""
 - name: Write data to a single cell in an Excel document
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     cell: B10
     data: "your_data"
 
 - name: Write list data to a row starting at B10
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     cell: B10
     data: ["B10_data", "B11_data", "B12_data", ...]
 
 - name: Write multi-row data from 2d list starting at B10
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     cell: B10
     data: [["B10_data", "B11_data", "B12_data"], ["C10_data", "C11_data", "C12_data"], ...]
 
 - name: Write data to default cell (A1)
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     data: "your_data"
 
 - name: Write data to first sheet
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     data: "your_data"
 
 - name: Write data only on empty cells (preserves already filled cells)
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     cell: B10
@@ -88,7 +88,7 @@ EXAMPLES = r"""
     override: false
 
 - name: Write data and re-evaluate
-  ejf.excel.write_sheet:
+  ejfattouch.excel.write_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     cell: B10
@@ -97,7 +97,7 @@ EXAMPLES = r"""
 
   
 - name: Read an Excel document with its values evaluated
-  ejf.read_excel_document:
+  ejfattouch.read_excel_document:
     path: /your/path/excel/document.xlsx
     evaluate: true
   register: document

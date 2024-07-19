@@ -33,18 +33,18 @@ options:
 
 EXAMPLES = r"""
 - name: Read sheet Sheet1 in an Excel document
-  ejf.excel.read_sheet:
+  ejfattouch.excel.read_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
   register: document
 
 - name: Read first sheet in an Excel document
-  ejf.excel.read_sheet:
+  ejfattouch.excel.read_sheet:
     path: /your/path/excel/document.xlsx
   register: document
   
 - name: Read evaluated sheet Sheet1 in an Excel document
-  ejf.excel.read_sheet:
+  ejfattouch.excel.read_sheet:
     path: /your/path/excel/document.xlsx
     sheet: "Sheet1"
     evaluate: true
