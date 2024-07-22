@@ -183,6 +183,8 @@ def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
     cell_coord = xl_utils.coordinate_to_tuple(cell)
     start_row, start_col = cell_coord[0], cell_coord[1]
 
+    cell_list = []
+
     def write_cell(value, row, column):  # Returns true if successfully written
         w_cell = ws.cell(row=row, column=column)
         if isinstance(w_cell, MergedCell):  # Skip over merged cells when writing
@@ -206,6 +208,7 @@ def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
             elif status:
                 write_change = True
                 item_number += 1
+                cell_list.append(xl_utils.get_column_letter(col) + str(row))
             col += 1
         return write_change
 
@@ -217,7 +220,8 @@ def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
             if write_row(sub_list, start_row):
                 changed = True
             start_row += 1
-    return changed
+    cell_list.sort()
+    return changed, cell_list
 
 
 def evaluate_workbook(path):
@@ -270,8 +274,11 @@ def main():
     if not sheet_name:
         sheet_name = wb.sheetnames[0]  # Get the first sheet if the sheet_name is unspecified
 
+    cell_changed_list = []
     try:
-        changed = write_data_to_sheet(data, cell, wb, sheet_name, override)
+        write = write_data_to_sheet(data, cell, wb, sheet_name, override)
+        changed = write[0]
+        cell_changed_list = write[1]
     except ValueError as e:
         module.fail_json("Incorrect value for cell '" + cell + "' ValueError: " + str(e))
 
@@ -295,7 +302,7 @@ def main():
 
     results['path'] = os.path.abspath(filepath)
     results['sheet'] = sheet_name
-    results['cell'] = cell
+    results['cells'] = cell_changed_list
     results['evaluate'] = evaluated
     results['changed'] = changed
 
