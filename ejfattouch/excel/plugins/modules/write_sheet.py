@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Copyright (c) 2024 Edward-Joseph Fattouch (ejfattouch@outlook.com)
+# Copyright (c) 2026 Edward-Joseph Fattouch (ejfattouch@outlook.com)
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 DOCUMENTATION = r'''
-module: read_document
+module: write_sheet
 author:
     - Edward-Joseph Fattouch (@ejfattouch)
 short_description: Writes data to a single sheet in an Excel document
@@ -94,13 +94,6 @@ EXAMPLES = r"""
     cell: B10
     data: "your_data"
     evaluate: true
-
-  
-- name: Read an Excel document with its values evaluated
-  ejfattouch.read_excel_document:
-    path: /your/path/excel/document.xlsx
-    evaluate: true
-  register: document
 """
 
 RETURN = r"""
@@ -125,29 +118,14 @@ sheet:
 
 import os
 from ansible.module_utils.basic import AnsibleModule
-from openpyxl import *
+# noinspection PyUnresolvedReferences
+from ansible_collections.ejfattouch.excel.plugins.module_utils.excel_common import (
+    check_excel_installation,
+    evaluate_workbook_formulas,
+)
+from openpyxl import load_workbook
 import openpyxl.utils as xl_utils
 from openpyxl.cell.cell import MergedCell
-
-
-def check_excel_installation():
-    import platform
-    # Checks if os is Windows or darwin (macOS)
-    if platform.system() == 'Windows':
-        try:
-            # Check if Excel executable exists
-            excel_path = os.path.join(os.environ["ProgramFiles"], "Microsoft Office", "root", "Office16", "EXCEL.EXE")
-            excel_path_x86 = os.path.join(os.environ["ProgramFiles(x86)"], "Microsoft Office", "root", "Office16",
-                                          "EXCEL.EXE")
-            return os.path.exists(excel_path) or os.path.exists(excel_path_x86)
-        except KeyError:
-            # Environment variable not found (Excel not installed)
-            return False
-    elif platform.system() == 'Darwin':
-        excel_path = os.path.join("/Applications", "Microsoft Excel.app")
-        return os.path.exists(excel_path)
-    else:
-        raise RuntimeError("Only Windows and MacOS are supported for evaluation")
 
 
 # Grabs sheet from Excel workbook or creates a new one if it doesn't already exist
@@ -224,16 +202,6 @@ def write_data_to_sheet(data, cell, wb, sheet_name, override=False):
     return changed, cell_list
 
 
-def evaluate_workbook(path):
-    import xlwings as xw
-    # xlwings allows for workbook to be opened using running excel instance
-    excel_app = xw.App(visible=False)
-    excel_book = excel_app.books.open(path)
-    excel_book.save()  # calling excel save compute functions and store it in cache
-    excel_book.close()
-    excel_app.quit()
-
-
 def main():
     module_args = dict(path=dict(type='path', required=True),
                        sheet=dict(type='str', required=False, default=''),
@@ -254,60 +222,54 @@ def main():
     override = module.params['override']
     evaluate = module.params['evaluate']
 
-    results = {}
-    changed = False
-
     if not os.path.isfile(filepath):
         module.fail_json(msg="The specified excel file does not exist at " + filepath)
-        return 1
 
     try:
         validate_data(data)
-    except TypeError as e:  # Inconsistent data type
+    except (TypeError, Exception) as e:
         module.fail_json(msg=str(e))
-        return 1
-    except Exception as e:  # Empty data
-        module.fail_json(msg=str(e))
-        return 1
 
-    wb = load_workbook(filename=filepath, data_only=True)
-    if not sheet_name:
-        sheet_name = wb.sheetnames[0]  # Get the first sheet if the sheet_name is unspecified
+    # Load workbook without data_only to preserve formulas
+    try:
+        wb = load_workbook(filename=filepath)
+    except Exception as e:
+        module.fail_json(msg=f"Failed to open workbook: {e}")
+
+    sheet_name = sheet_name or wb.sheetnames[0]
 
     cell_changed_list = []
     try:
-        write = write_data_to_sheet(data, cell, wb, sheet_name, override)
-        changed = write[0]
-        cell_changed_list = write[1]
+        changed, cell_changed_list = write_data_to_sheet(data, cell, wb, sheet_name, override)
     except ValueError as e:
-        module.fail_json("Incorrect value for cell '" + cell + "' ValueError: " + str(e))
+        wb.close()
+        module.fail_json(msg=f"Incorrect value for cell '{cell}': {e}")
 
     if changed:
         wb.save(filepath)
+    wb.close()
 
     evaluated = False
     if evaluate:
         try:
             if not check_excel_installation():
                 module.fail_json(msg="Excel is not installed, needed for function evaluation.")
-                return 1
-            evaluate_workbook(filepath)
+            evaluate_workbook_formulas(filepath)
             evaluated = True
-        except RuntimeError as e:  # Exception when wrong os is trying to be used for func validation
+        except RuntimeError as e:
             module.fail_json(msg=str(e))
-            return 1
         except ModuleNotFoundError as e:
             module.fail_json(msg=f"{e.name} is not installed, needed for function evaluation.")
-            return 1
 
-    results['path'] = os.path.abspath(filepath)
-    results['sheet'] = sheet_name
-    results['cells'] = cell_changed_list
-    results['evaluate'] = evaluated
-    results['changed'] = changed
+    results = {
+        'path': os.path.abspath(filepath),
+        'sheet': sheet_name,
+        'cells': cell_changed_list,
+        'evaluated': evaluated,
+        'changed': changed,
+    }
 
     module.exit_json(**results)
-    return 0
 
 
 if __name__ == '__main__':

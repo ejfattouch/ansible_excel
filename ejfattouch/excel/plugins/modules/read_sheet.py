@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2024 Edward-Joseph Fattouch (ejfattouch@outlook.com)
+# Copyright (c) 2026 Edward-Joseph Fattouch (ejfattouch@outlook.com)
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 DOCUMENTATION = r'''
@@ -19,10 +19,10 @@ options:
     type: str
   sheet:
     description:
-      - The name of the sheet to write to. If the sheet does not exist, it will be created.
+      - The name of the sheet to read from.
       - If left empty, first sheet in the workbook will be used.
     type: str
-    default: 'First sheet in the workbook'
+    default: ''
   evaluate:
     description:
       - Whether or not to evaluate the functions in an Excel document. If false, will return the last calculated value.
@@ -73,47 +73,13 @@ sheet:
 
 import os
 from ansible.module_utils.basic import AnsibleModule
-from openpyxl import *
-
-
-def read_data(wb, sheet_name):
-    result = []
-    sheet = wb[sheet_name]
-    for row in sheet.rows:
-        result.append([cell.value for cell in row])
-    return result
-
-
-def evaluate_workbook(path, sheet_name):
-    import xlwings as xw
-    # xlwings allows for workbook to be opened using running excel instance
-    excel_app = xw.App(visible=False)
-    excel_book = excel_app.books.open(path)
-    excel_book.save()  # calling excel save compute functions and store it in cache
-    excel_book.close()
-    excel_app.quit()
-
-    wb = load_workbook(filename=path, data_only=True)
-    return read_data(wb, sheet_name)
-
-
-def check_excel_installation():
-    import platform
-    # Checks if os is Windows or darwin (macOS)
-    if platform.system() == 'Windows':
-        try:
-            # Check if Excel executable exists
-            excel_path = os.path.join(os.environ["ProgramFiles"], "Microsoft Office", "root", "Office16", "EXCEL.EXE")
-            excel_path_x86 = os.path.join(os.environ["ProgramFiles(x86)"], "Microsoft Office", "root", "Office16",
-                                          "EXCEL.EXE")
-            return os.path.exists(excel_path) or os.path.exists(excel_path_x86)
-        except KeyError:  # Environment variable not found (Excel not installed)
-            return False
-    elif platform.system() == 'Darwin':
-        excel_path = os.path.join("/Applications", "Microsoft Excel.app")
-        return os.path.exists(excel_path)
-    else:
-        raise RuntimeError("Only Windows and MacOS are supported for evaluation")
+# noinspection PyUnresolvedReferences
+from ansible_collections.ejfattouch.excel.plugins.module_utils.excel_common import (
+    check_excel_installation,
+    evaluate_workbook_formulas,
+    read_sheet_data,
+)
+from openpyxl import load_workbook
 
 
 def main():
@@ -125,44 +91,44 @@ def main():
         supports_check_mode=True,
     )
 
-    if not os.path.isfile(module.params['path']):
-        module.fail_json(msg="The specified excel file does not exist at " + module.params['path'])
-        return 1
+    path = module.params['path']
+    if not os.path.isfile(path):
+        module.fail_json(msg="The specified excel file does not exist at " + path)
 
-    results = {}
-    results['path'] = os.path.abspath(module.params['path'])
-    sheet_name = module.params['sheet']
+    results = {'path': os.path.abspath(path)}
 
-    if not sheet_name:
-        wb = load_workbook(filename=module.params['path'], data_only=True)
-        sheet_name = wb.sheetnames[0]  # Get the first sheet if the sheet_name is unspecified
+    # Load workbook and resolve sheet name
+    try:
+        wb = load_workbook(filename=path, data_only=True, read_only=True)
+    except Exception as e:
+        module.fail_json(msg=f"Failed to open workbook: {e}")
+
+    sheet_name = module.params['sheet'] or wb.sheetnames[0]
+    if sheet_name not in wb.sheetnames:
+        wb.close()
+        module.fail_json(msg=f"Worksheet '{sheet_name}' does not exist in Excel workbook {results['path']}")
 
     if module.params['evaluate']:
+        wb.close()
         try:
             if not check_excel_installation():
                 module.fail_json(msg="Excel is not installed, needed for function evaluation.")
-                return 1
-            results['content'] = evaluate_workbook(module.params['path'], sheet_name)
+            evaluate_workbook_formulas(path)
+            # Reload workbook after evaluation to get computed values
+            wb = load_workbook(filename=path, data_only=True, read_only=True)
+            results['content'] = read_sheet_data(wb[sheet_name])
             results['evaluated'] = True
-        except RuntimeError as e:  # Exception when wrong os is trying to be used for func validation
+        except RuntimeError as e:
             module.fail_json(msg=str(e))
-            return 1
         except ModuleNotFoundError as e:
             module.fail_json(msg=f"{e.name} is not installed, needed for function evaluation.")
-            return 1
     else:
-        try:
-            excel_wb = load_workbook(filename=module.params['path'], data_only=True)
-            results['content'] = read_data(excel_wb, sheet_name)
-            results['evaluated'] = False
-        except KeyError as e:
-            err_msg = f"Worksheet '{module.params['sheet']}' does not exist in Excel workbook {os.path.abspath(module.params['path'])}"
-            module.fail_json(msg=err_msg)
-            return 1
+        results['content'] = read_sheet_data(wb[sheet_name])
+        results['evaluated'] = False
 
+    wb.close()
     results['sheet'] = sheet_name
     module.exit_json(**results)
-    return 0
 
 
 if __name__ == '__main__':
